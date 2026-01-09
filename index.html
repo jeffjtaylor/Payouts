@@ -8,11 +8,11 @@
   <style>
     :root{
       --bg:#0b0c10; --card:#14161d; --muted:#a7adbb; --text:#eef1f7; --line:#2a2f3a; --chip:#0f1117;
-      --accent:#6ea8fe;
+      --accent:#6ea8fe; /* default */
     }
     [data-theme="light"]{
       --bg:#f6f7fb; --card:#ffffff; --muted:#5a6475; --text:#111827; --line:#e5e7eb; --chip:#f3f4f6;
-      --accent:#2563eb;
+      --accent:#2563eb; /* default */
     }
     *{box-sizing:border-box;}
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);}
@@ -73,6 +73,7 @@
     </div>
 
     <div class="foot">
+     
     </div>
 
     <div id="toast" class="toast" style="display:none;"></div>
@@ -82,8 +83,6 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
   <script>
-    const STORAGE_KEY = "payoutAppState_v1";
-
     // ---- Troops table (8–24)
     const TROOPS = {
       8:{total:64,payouts:[28,17,11,8]},
@@ -125,22 +124,8 @@
 
     const money = (n) => `$${n}`;
 
-    function safeParseState(){
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if(!raw) return null;
-        const s = JSON.parse(raw);
-        if(!s || (s.game !== "troops" && s.game !== "money")) return null;
-        if(typeof s.players !== "string" || typeof s.fee !== "string") return null;
-        return s;
-      } catch { return null; }
-    }
-
-    function saveState(next){
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
-    }
-
-    function setAccentAndTitles(game){
+    function setAccentForGame(game){
+      // Troops = blue, Money Games = green
       const isLight = (document.documentElement.getAttribute("data-theme") === "light");
       const accent = game === "money"
         ? (isLight ? "#16a34a" : "#22c55e")
@@ -161,49 +146,28 @@
     }
 
     function App(){
-      const restored = safeParseState();
-
-      const [game, setGame] = React.useState(restored?.game || "troops");
+      const [game, setGame] = React.useState("troops"); // "troops" | "money"
       const table = game === "troops" ? TROOPS : MONEY_GAMES;
 
-      // Defaults per game
       const defaultPlayers = game === "troops" ? "16" : "8";
       const defaultFee = game === "troops" ? "8" : "15";
 
-      // Initialize players/fee from restored state if valid for the table, otherwise defaults
-      const initialPlayers = (() => {
-        const keys = Object.keys(table);
-        if(restored?.game === game && restored?.players && keys.includes(restored.players)) return restored.players;
-        return keys.includes(defaultPlayers) ? defaultPlayers : keys[0];
-      })();
+      const [players, setPlayers] = React.useState(defaultPlayers);
+      const [fee, setFee] = React.useState(defaultFee);
 
-      const initialFee = (restored?.game === game && typeof restored?.fee === "string") ? restored.fee : defaultFee;
-
-      const [players, setPlayers] = React.useState(initialPlayers);
-      const [fee, setFee] = React.useState(initialFee);
-
-      // Keep accent/title synced when game changes
-      React.useEffect(() => { setAccentAndTitles(game); }, [game]);
-
-      // When switching games, try to carry over previous players if valid; else default for that game
+      // When game changes, reset to valid defaults
       React.useEffect(() => {
+        setAccentForGame(game);
         const keys = Object.keys(table);
-        setPlayers((prev) => (keys.includes(prev) ? prev : (keys.includes(defaultPlayers) ? defaultPlayers : keys[0])));
-        setFee((prev) => (typeof prev === "string" && prev.length ? prev : defaultFee));
+        setPlayers(keys.includes(defaultPlayers) ? defaultPlayers : keys[0]);
+        setFee(defaultFee);
       }, [game]);
-
-      // Persist state whenever user changes something
-      React.useEffect(() => {
-        saveState({ game, players, fee });
-      }, [game, players, fee]);
 
       const entry = table[players];
       const playersNum = Number(players);
-
-      // Treat blank fee as invalid (prevents pot showing $0 when cleared)
-      const feeNum = fee.trim() === "" ? NaN : Number(fee);
-
+      const feeNum = Number(fee);
       const pot = (Number.isFinite(playersNum) && Number.isFinite(feeNum)) ? Math.round(playersNum * feeNum) : NaN;
+
       const placesPaid = entry ? entry.payouts.length : 0;
 
       function copyPayouts(){
@@ -233,19 +197,10 @@
         ta.style.position = "fixed";
         ta.style.left = "-9999px";
         document.body.appendChild(ta);
-        ta.focus();
         ta.select();
-        ta.setSelectionRange(0, ta.value.length); // iOS help
         try { document.execCommand("copy"); toast("Copied payouts ✅"); }
         catch { toast("Copy failed (try selecting manually)."); }
         document.body.removeChild(ta);
-      }
-
-      function reset(){
-        const keys = Object.keys(table);
-        setPlayers(keys.includes(defaultPlayers) ? defaultPlayers : keys[0]);
-        setFee(defaultFee);
-        toast("Reset ✅");
       }
 
       return React.createElement(React.Fragment,null,
@@ -283,7 +238,7 @@
 
         React.createElement("div",{className:"btnrow"},
           React.createElement("button",{className:"primary",onClick:copyPayouts},"Copy payouts"),
-          React.createElement("button",{onClick:reset},"Reset")
+          React.createElement("button",{onClick:()=>{ setPlayers(defaultPlayers); setFee(defaultFee); toast("Reset ✅"); }},"Reset")
         ),
 
         entry ? React.createElement("div",{style:{marginTop:"12px"}},
@@ -318,19 +273,10 @@
 
     ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
 
-    // Theme toggle (persisted when allowed) + keep accent synced
+    // Theme toggle (persisted) + keep accent in sync
     (function themeInit(){
       const btn = document.getElementById("themeBtn");
-
-      // Safe localStorage helpers (fixes iPhone Files/Safari local-file restrictions)
-      function lsGet(key){
-        try { return localStorage.getItem(key); } catch { return null; }
-      }
-      function lsSet(key, val){
-        try { localStorage.setItem(key, val); } catch {}
-      }
-
-      const saved = lsGet("theme");
+      const saved = localStorage.getItem("theme");
       const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
       const theme = saved || (prefersLight ? "light" : "dark");
       document.documentElement.setAttribute("data-theme", theme);
@@ -340,25 +286,17 @@
         const cur = document.documentElement.getAttribute("data-theme") || "dark";
         const next = cur === "dark" ? "light" : "dark";
         document.documentElement.setAttribute("data-theme", next);
-        lsSet("theme", next);
+        localStorage.setItem("theme", next);
         btn.textContent = next === "light" ? "☀️" : "🌙";
 
-        // Re-apply accent based on current stored game (if any)
-        let g = "troops";
-        try {
-          const s = JSON.parse(lsGet("payoutAppState_v1") || "{}");
-          if (s.game === "money") g = "money";
-        } catch {}
-        setAccentAndTitles(g);
+        // Accent depends on theme, so re-apply based on current title text
+        const currentTitle = document.getElementById("pageTitle").textContent;
+        const game = (currentTitle === "Money Games") ? "money" : "troops";
+        setAccentForGame(game);
       });
 
-      // Apply accent/title on load based on stored state if present
-      let g = "troops";
-      try {
-        const s = JSON.parse(lsGet("payoutAppState_v1") || "{}");
-        if (s.game === "money") g = "money";
-      } catch {}
-      setAccentAndTitles(g);
+      // Set initial accent/title
+      setAccentForGame("troops");
     })();
   </script>
 </body>
