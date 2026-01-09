@@ -132,7 +132,7 @@
         : (isLight ? "#2563eb" : "#6ea8fe");
       document.documentElement.style.setProperty("--accent", accent);
 
-      const titleText = game === "money" ? "Money Games" : "Troops Payouts";
+      const titleText = game === "money" ? "Money Games" : "Troops";
       document.getElementById("pageTitle").textContent = titleText;
       document.title = titleText;
     }
@@ -172,7 +172,7 @@
 
       function copyPayouts(){
         if(!entry){ toast("Nothing to copy."); return; }
-        const gameName = game === "money" ? "Money Games" : "Troops Payouts";
+        const gameName = game === "money" ? "Money Games" : "Troops";
         const lines = [
           `${gameName}`,
           `${playersNum} players`,
@@ -209,7 +209,7 @@
           React.createElement("div",null,
             React.createElement("label",{htmlFor:"game"},"Game"),
             React.createElement("select",{id:"game",value:game,onChange:e=>setGame(e.target.value)},
-              React.createElement("option",{value:"troops"},"Troops Payouts"),
+              React.createElement("option",{value:"troops"},"Troops"),
               React.createElement("option",{value:"money"},"Money Games")
             )
           ),
