@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payouts</title>
+
+  <style>
+    :root{
+      --bg:#0b0c10; --card:#14161d; --muted:#a7adbb; --text:#eef1f7; --line:#2a2f3a; --chip:#0f1117;
+      --accent:#6ea8fe;
+    }
+    [data-theme="light"]{
+      --bg:#f6f7fb; --card:#ffffff; --muted:#5a6475; --text:#111827; --line:#e5e7eb; --chip:#f3f4f6;
+      --accent:#2563eb;
+    }
+    *{box-sizing:border-box;}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);}
+    .wrap{max-width:560px;margin:0 auto;padding:18px 14px 28px;}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+    .title{font-size:22px;font-weight:850;margin:8px 0 2px;}
+    .sub{color:var(--muted);font-size:13px;margin:0 0 14px;}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;}
+    .row{display:grid;grid-template-columns:1fr;gap:10px;}
+    @media(min-width:460px){.row{grid-template-columns:1fr 1fr;}}
+    label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px;}
+    input,select{
+      width:100%;padding:12px;font-size:16px;border-radius:14px;border:1px solid var(--line);
+      background:var(--chip);color:var(--text);outline:none;
+    }
+    input:focus,select:focus{border-color:var(--accent);}
+    button{
+      border-radius:14px;border:1px solid var(--line);background:var(--chip);color:var(--text);
+      padding:12px;font-size:16px;
+    }
+    button.small{flex:0 0 auto;padding:10px 12px;}
+    button.primary{background:var(--accent);border-color:transparent;color:#06101f;font-weight:850;}
+    .btnrow{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:var(--chip);border:1px solid var(--line);color:var(--muted);font-size:12px;}
+    .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+    .stat{background:var(--chip);border:1px solid var(--line);border-radius:14px;padding:10px;}
+    .stat .k{font-size:12px;color:var(--muted);}
+    .stat .v{font-size:18px;font-weight:850;margin-top:4px;}
+    .list{margin-top:10px;background:var(--chip);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+    .item{display:flex;justify-content:space-between;padding:12px;border-top:1px solid var(--line);}
+    .item:first-child{border-top:0;}
+    .item .left{font-weight:750;}
+    .item .right{font-weight:850;}
+    .notice{margin-top:10px;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,0.03);color:var(--muted);font-size:13px;line-height:1.35;}
+    .toast{
+      position:fixed; left:50%; transform:translateX(-50%);
+      bottom:16px; padding:10px 12px; border-radius:14px;
+      background:var(--card); border:1px solid var(--line); color:var(--text);
+      font-size:13px; box-shadow:0 10px 25px rgba(0,0,0,0.25);
+      max-width: 92vw;
+    }
+    .foot{margin-top:12px;font-size:12px;color:var(--muted);line-height:1.35;}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <div id="pageTitle" class="title">Payouts</div>
+        <div class="sub">Switch game type, enter players, and see payouts.</div>
+      </div>
+      <button id="themeBtn" class="small" aria-label="Toggle theme">🌙</button>
+    </div>
+
+    <div class="card">
+      <div id="root"></div>
+    </div>
+
+    <div class="foot">
+    </div>
+
+    <div id="toast" class="toast" style="display:none;"></div>
+  </div>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <script>
+    const STORAGE_KEY = "payoutAppState_v1";
+
+    // ---- Troops table (8–24)
+    const TROOPS = {
+      8:{total:64,payouts:[28,17,11,8]},
+      9:{total:72,payouts:[32,18,13,9]},
+      10:{total:80,payouts:[32,18,13,10,7]},
+      11:{total:88,payouts:[35,21,14,10,8]},
+      12:{total:96,payouts:[35,21,15,11,8,6]},
+      13:{total:104,payouts:[40,22,16,12,8,6]},
+      14:{total:112,payouts:[39,25,17,12,9,6,4]},
+      15:{total:120,payouts:[41,25,18,14,10,7,5]},
+      16:{total:128,payouts:[42,25,19,14,10,8,6,4]},
+      17:{total:136,payouts:[44,28,20,15,11,8,6,4]},
+      18:{total:144,payouts:[46,28,20,16,11,8,6,5,4]},
+      19:{total:152,payouts:[48,29,21,17,13,9,6,5,4]},
+      20:{total:160,payouts:[46,29,23,18,13,9,7,6,5,4]},
+      21:{total:168,payouts:[48,32,23,18,16,9,7,6,5,4]},
+      22:{total:176,payouts:[50,34,24,19,13,10,7,6,5,4,4]},
+      23:{total:184,payouts:[54,34,25,20,15,10,7,6,5,4,4]},
+      24:{total:192,payouts:[56,36,26,20,14,10,7,6,5,4,4,4]},
+    };
+
+    // ---- Money Games table (3–16)
+    const MONEY_GAMES = {
+      3:{total:45,payouts:[30,15]},
+      4:{total:60,payouts:[30,20,10]},
+      5:{total:75,payouts:[35,25,15]},
+      6:{total:90,payouts:[36,26,18,10]},
+      7:{total:105,payouts:[40,30,20,15]},
+      8:{total:120,payouts:[40,32,24,16,8]},
+      9:{total:135,payouts:[45,36,27,18,9]},
+      10:{total:150,payouts:[46,37,28,20,12,7]},
+      11:{total:165,payouts:[50,40,30,20,15,10]},
+      12:{total:180,payouts:[52,42,32,22,15,10,7]},
+      13:{total:195,payouts:[55,45,35,25,15,12,8]},
+      14:{total:210,payouts:[56,46,38,28,18,14,10]},
+      15:{total:225,payouts:[60,45,35,28,22,15,12,8]},
+      16:{total:240,payouts:[60,50,40,30,24,16,12,8]},
+    };
+
+    const money = (n) => `$${n}`;
+
+    function safeParseState(){
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return null;
+        const s = JSON.parse(raw);
+        if(!s || (s.game !== "troops" && s.game !== "money")) return null;
+        if(typeof s.players !== "string" || typeof s.fee !== "string") return null;
+        return s;
+      } catch { return null; }
+    }
+
+    function saveState(next){
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+    }
+
+    function setAccentAndTitles(game){
+      const isLight = (document.documentElement.getAttribute("data-theme") === "light");
+      const accent = game === "money"
+        ? (isLight ? "#16a34a" : "#22c55e")
+        : (isLight ? "#2563eb" : "#6ea8fe");
+      document.documentElement.style.setProperty("--accent", accent);
+
+      const titleText = game === "money" ? "Money Games" : "Troops Payouts";
+      document.getElementById("pageTitle").textContent = titleText;
+      document.title = titleText;
+    }
+
+    function toast(msg){
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.style.display = "block";
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => { el.style.display = "none"; }, 1800);
+    }
+
+    function App(){
+      const restored = safeParseState();
+
+      const [game, setGame] = React.useState(restored?.game || "troops");
+      const table = game === "troops" ? TROOPS : MONEY_GAMES;
+
+      // Defaults per game
+      const defaultPlayers = game === "troops" ? "16" : "8";
+      const defaultFee = game === "troops" ? "8" : "15";
+
+      // Initialize players/fee from restored state if valid for the table, otherwise defaults
+      const initialPlayers = (() => {
+        const keys = Object.keys(table);
+        if(restored?.game === game && restored?.players && keys.includes(restored.players)) return restored.players;
+        return keys.includes(defaultPlayers) ? defaultPlayers : keys[0];
+      })();
+
+      const initialFee = (restored?.game === game && typeof restored?.fee === "string") ? restored.fee : defaultFee;
+
+      const [players, setPlayers] = React.useState(initialPlayers);
+      const [fee, setFee] = React.useState(initialFee);
+
+      // Keep accent/title synced when game changes
+      React.useEffect(() => { setAccentAndTitles(game); }, [game]);
+
+      // When switching games, try to carry over previous players if valid; else default for that game
+      React.useEffect(() => {
+        const keys = Object.keys(table);
+        setPlayers((prev) => (keys.includes(prev) ? prev : (keys.includes(defaultPlayers) ? defaultPlayers : keys[0])));
+        setFee((prev) => (typeof prev === "string" && prev.length ? prev : defaultFee));
+      }, [game]);
+
+      // Persist state whenever user changes something
+      React.useEffect(() => {
+        saveState({ game, players, fee });
+      }, [game, players, fee]);
+
+      const entry = table[players];
+      const playersNum = Number(players);
+
+      // Treat blank fee as invalid (prevents pot showing $0 when cleared)
+      const feeNum = fee.trim() === "" ? NaN : Number(fee);
+
+      const pot = (Number.isFinite(playersNum) && Number.isFinite(feeNum)) ? Math.round(playersNum * feeNum) : NaN;
+      const placesPaid = entry ? entry.payouts.length : 0;
+
+      function copyPayouts(){
+        if(!entry){ toast("Nothing to copy."); return; }
+        const gameName = game === "money" ? "Money Games" : "Troops Payouts";
+        const lines = [
+          `${gameName}`,
+          `${playersNum} players`,
+          `Table total: ${money(entry.total)}`,
+          Number.isFinite(pot) ? `Entry fee: ${money(feeNum)}  |  Pot: ${money(pot)}` : `Entry fee: ${fee}`,
+          "",
+          "Places / Payouts:"
+        ];
+        entry.payouts.forEach((amt, idx) => lines.push(`Place ${idx+1}: ${money(amt)}`));
+        const text = lines.join("\n");
+
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(text).then(() => toast("Copied payouts ✅")).catch(() => fallbackCopy(text));
+        } else {
+          fallbackCopy(text);
+        }
+      }
+
+      function fallbackCopy(text){
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        ta.setSelectionRange(0, ta.value.length); // iOS help
+        try { document.execCommand("copy"); toast("Copied payouts ✅"); }
+        catch { toast("Copy failed (try selecting manually)."); }
+        document.body.removeChild(ta);
+      }
+
+      function reset(){
+        const keys = Object.keys(table);
+        setPlayers(keys.includes(defaultPlayers) ? defaultPlayers : keys[0]);
+        setFee(defaultFee);
+        toast("Reset ✅");
+      }
+
+      return React.createElement(React.Fragment,null,
+
+        React.createElement("div",{className:"row"},
+          React.createElement("div",null,
+            React.createElement("label",{htmlFor:"game"},"Game"),
+            React.createElement("select",{id:"game",value:game,onChange:e=>setGame(e.target.value)},
+              React.createElement("option",{value:"troops"},"Troops Payouts"),
+              React.createElement("option",{value:"money"},"Money Games")
+            )
+          ),
+          React.createElement("div",null,
+            React.createElement("label",{htmlFor:"players"},"Players"),
+            React.createElement("select",{id:"players",value:players,onChange:e=>setPlayers(e.target.value)},
+              Object.keys(table).map(k=>React.createElement("option",{key:k,value:k},`${k} players`))
+            )
+          )
+        ),
+
+        React.createElement("div",{className:"row",style:{marginTop:"10px"}},
+          React.createElement("div",null,
+            React.createElement("label",{htmlFor:"fee"},"Entry fee per player ($)"),
+            React.createElement("input",{id:"fee",inputMode:"decimal",value:fee,onChange:e=>setFee(e.target.value),placeholder:"e.g. 8"})
+          ),
+          React.createElement("div",null,
+            React.createElement("label",null,"Summary"),
+            React.createElement("div",null,
+              React.createElement("span",{className:"pill"},`${placesPaid} places paid`),
+              " ",
+              (Number.isFinite(pot) ? React.createElement("span",{className:"pill"},`Pot: ${money(pot)}`) : null)
+            )
+          )
+        ),
+
+        React.createElement("div",{className:"btnrow"},
+          React.createElement("button",{className:"primary",onClick:copyPayouts},"Copy payouts"),
+          React.createElement("button",{onClick:reset},"Reset")
+        ),
+
+        entry ? React.createElement("div",{style:{marginTop:"12px"}},
+          React.createElement("div",{className:"statgrid"},
+            React.createElement("div",{className:"stat"},
+              React.createElement("div",{className:"k"},"Table total"),
+              React.createElement("div",{className:"v"},money(entry.total))
+            ),
+            React.createElement("div",{className:"stat"},
+              React.createElement("div",{className:"k"},"1st place"),
+              React.createElement("div",{className:"v"},money(entry.payouts[0]))
+            )
+          ),
+
+          (Number.isFinite(pot) && pot !== entry.total)
+            ? React.createElement("div",{className:"notice"},
+              `Note: Your entry-fee pot is ${money(pot)}. This table’s total is ${money(entry.total)}. (Payouts shown are the fixed table payouts.)`
+            )
+            : null,
+
+          React.createElement("div",{className:"list"},
+            entry.payouts.map((amt,idx)=>
+              React.createElement("div",{className:"item",key:idx},
+                React.createElement("div",{className:"left"},`Place ${idx+1}`),
+                React.createElement("div",{className:"right"},money(amt))
+              )
+            )
+          )
+        ) : React.createElement("div",{className:"notice"},"No payout table found for that selection.")
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+
+    // Theme toggle (persisted when allowed) + keep accent synced
+    (function themeInit(){
+      const btn = document.getElementById("themeBtn");
+
+      // Safe localStorage helpers (fixes iPhone Files/Safari local-file restrictions)
+      function lsGet(key){
+        try { return localStorage.getItem(key); } catch { return null; }
+      }
+      function lsSet(key, val){
+        try { localStorage.setItem(key, val); } catch {}
+      }
+
+      const saved = lsGet("theme");
+      const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+      const theme = saved || (prefersLight ? "light" : "dark");
+      document.documentElement.setAttribute("data-theme", theme);
+      btn.textContent = theme === "light" ? "☀️" : "🌙";
+
+      btn.addEventListener("click", () => {
+        const cur = document.documentElement.getAttribute("data-theme") || "dark";
+        const next = cur === "dark" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", next);
+        lsSet("theme", next);
+        btn.textContent = next === "light" ? "☀️" : "🌙";
+
+        // Re-apply accent based on current stored game (if any)
+        let g = "troops";
+        try {
+          const s = JSON.parse(lsGet("payoutAppState_v1") || "{}");
+          if (s.game === "money") g = "money";
+        } catch {}
+        setAccentAndTitles(g);
+      });
+
+      // Apply accent/title on load based on stored state if present
+      let g = "troops";
+      try {
+        const s = JSON.parse(lsGet("payoutAppState_v1") || "{}");
+        if (s.game === "money") g = "money";
+      } catch {}
+      setAccentAndTitles(g);
+    })();
+  </script>
+</body>
+</html>
