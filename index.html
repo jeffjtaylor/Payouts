@@ -41,7 +41,7 @@
       padding:12px;font-size:16px;
     }
     button.small{flex:0 0 auto;padding:10px 12px;}
-    button.primary{background:var(--accent);border-color:transparent;color:#06101f;font-weight:850;}
+    button.primary{background:var(--accent);border-color:transparent;color:#ffffff;font-weight:850;}
     .btnrow{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;}
     .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:var(--chip);border:1px solid var(--line);color:var(--muted);font-size:12px;}
     .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
@@ -62,6 +62,20 @@
       max-width: 92vw;
     }
     .foot{margin-top:12px;font-size:12px;color:var(--muted);line-height:1.35;}
+
+#fee{
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+}
+
+
+#copyBtn,
+#copyBtn:active,
+#copyBtn:focus{
+  color:#ffffff;
+}
+
   </style>
 </head>
 
@@ -70,7 +84,7 @@
     <div class="topbar">
       <div>
         <div id="pageTitle" class="title">Payouts</div>
-        <div class="sub">Switch game type, enter players, and see payouts.</div>
+        <div class="sub">Switch game type, choose number of players, and see payouts!</div>
       </div>
       <button id="themeBtn" class="small" aria-label="Toggle theme">🌙</button>
     </div>
@@ -231,7 +245,10 @@
         React.createElement("div",{className:"row",style:{marginTop:"10px"}},
           React.createElement("div",null,
             React.createElement("label",{htmlFor:"fee"},"Entry fee per player ($)"),
-            React.createElement("input",{id:"fee",inputMode:"decimal",value:fee,onChange:e=>setFee(e.target.value),placeholder:"e.g. 8"})
+            React.createElement("input",{
+  id:"fee",
+  value: `$${fee} per player`,
+  readOnly:true})
           ),
           React.createElement("div",null,
             React.createElement("label",null,"Summary"),
@@ -244,8 +261,8 @@
         ),
 
         React.createElement("div",{className:"btnrow"},
-          React.createElement("button",{className:"primary",onClick:copyPayouts},"Copy payouts"),
-          React.createElement("button",{onClick:()=>{ setPlayers(defaultPlayers); setFee(defaultFee); toast("Reset ✅"); }},"Reset")
+          React.createElement("button",{className:"primary",onClick:copyPayouts},"Copy to text payouts"),
+          
         ),
 
         entry ? React.createElement("div",{style:{marginTop:"12px"}},
