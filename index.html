@@ -266,10 +266,6 @@
           )
         ),
 
-        React.createElement("div",{className:"btnrow"},
-          React.createElement("button",{className:"primary",onClick:copyPayouts},"Copy to text payouts")     
-        ),
-
                                  
         entry ? React.createElement("div",{style:{marginTop:"12px"}},
 
@@ -303,6 +299,18 @@
               )
             )
           )
+          ,
+React.createElement(
+  "div",
+  { className:"btnrow" },
+  React.createElement(
+    "button",
+    { className:"primary", onClick:copyPayouts },
+    "Copy Payouts to Text"
+  )
+)
+
+                                    
         ) : React.createElement("div",{className:"notice"},"No payout table found for that selection.")
       );
     }
@@ -337,6 +345,7 @@
   </script>
 </body>
 </html>
+
 
 
 
