@@ -267,15 +267,15 @@
         ),
 
         React.createElement("div",{className:"btnrow"},
-          React.createElement("button",{className:"primary",onClick:copyPayouts},"Copy to text payouts"),
-          
+          React.createElement("button",{className:"primary",onClick:copyPayouts},"Copy to text payouts")     
         ),
 
                                  
         entry ? React.createElement("div",{style:{marginTop:"12px"}},
-          React.createElement("div",{className:"statgrid"},
 
-                              React.createElement("div",{className:"statgrid"},
+        React.createElement(
+  "div",
+  { className:"statgrid" },
   React.createElement(
     "div",
     { className:"stat" },
@@ -286,22 +286,8 @@
       Number.isFinite(pot) ? money(pot) : "—"
     )
   )
-),
+),                                    
 
-
-                              
-           React.createElement(
-  "div",
-  { className:"stat" },
-  React.createElement("div", { className:"k" }, "Pot Total"),
-  React.createElement(
-    "div",
-    { className:"v" },
-    Number.isFinite(pot) ? money(pot) : "—"
-  )
-)
-
-          ),
 
           (Number.isFinite(pot) && pot !== entry.total)
             ? React.createElement("div",{className:"notice"},
@@ -351,5 +337,6 @@
   </script>
 </body>
 </html>
+
 
 
