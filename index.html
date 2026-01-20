@@ -271,15 +271,22 @@
               React.createElement("div",{className:"k"},"Pot Total"),
               React.createElement("div",{className:"v"},money(entry.total))
             ),
-            React.createElement("div",{className:"stat"},
-              React.createElement("div",{className:"k"},"1st place"),
-              React.createElement("div",{className:"v"},money(entry.payouts[0]))
-            )
+           React.createElement(
+  "div",
+  { className:"stat" },
+  React.createElement("div", { className:"k" }, "Pot Total"),
+  React.createElement(
+    "div",
+    { className:"v" },
+    Number.isFinite(pot) ? money(pot) : "—"
+  )
+)
+
           ),
 
           (Number.isFinite(pot) && pot !== entry.total)
             ? React.createElement("div",{className:"notice"},
-              `Note: Your entry-fee pot is ${money(pot)}. This table’s total is ${money(entry.total)}. (Payouts shown are the fixed table payouts.)`
+            `Payouts are based on the fixed table total of ${money(entry.total)}.`
             )
             : null,
 
@@ -325,3 +332,4 @@
   </script>
 </body>
 </html>
+
